@@ -147,4 +147,40 @@ public class UserDAO implements IUserDAO{
             }
         }
     }
+
+    @Override
+    public User getUserById(int id) {
+        User user = null;
+        String query = "{CALL get_user_by_id(?)}";
+        try (Connection connection = getConnection(); CallableStatement callableStatement = connection.prepareCall(query))
+        {
+            callableStatement.setInt(1, id);
+            ResultSet resultSet = callableStatement.executeQuery();
+            while (resultSet.next()) {
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String country = resultSet.getString("country");
+                user = new User(id, name, email, country);
+            }
+        } catch (SQLException e) {
+            printSQLException(e);
+        }
+        return user;
+    }
+
+    @Override
+    public void insertUserStore(User user) throws SQLException {
+        String query = "{CALL insert_user(?,?,?)}";
+        try (Connection connection = getConnection(); CallableStatement callableStatement = connection.prepareCall(query))
+        {
+            callableStatement.setString(1, user.getName());
+            callableStatement.setString(2, user.getEmail());
+            callableStatement.setString(3, user.getCountry());
+            System.out.println(callableStatement);
+            callableStatement.executeUpdate();
+        }
+        catch (SQLException e) {
+            printSQLException(e);
+        }
+    }
 }
