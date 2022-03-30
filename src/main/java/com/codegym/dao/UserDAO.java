@@ -2,7 +2,10 @@ package com.codegym.dao;
 
 import com.codegym.model.User;
 
+import java.math.BigDecimal;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +20,18 @@ public class UserDAO implements IUserDAO {
     private static final String SELECT_ALL_USERS = "select * from users";
     private static final String DELETE_USERS_SQL = "delete from user where id = ?;";
     private static final String UPDATE_USERS_SQL = "update user set name = ?,email= ?, country =? where id = ?;";
+
+    private static final String SQL_INSERT = "INSERT INTO EMPLOYEE (NAME, SALARY, CREATED_DATE) VALUES (?,?,?)";
+    private static final String SQL_UPDATE = "UPDATE EMPLOYEE SET SALARY=? WHERE NAME=?";
+    private static final String SQL_TABLE_CREATE = "CREATE TABLE EMPLOYEE"
+            + "("
+            + " ID serial,"
+            + " NAME varchar(100) NOT NULL,"
+            + " SALARY numeric(15, 2) NOT NULL,"
+            + " CREATED_DATE timestamp,"
+            + " PRIMARY KEY (ID)"
+            + ")";
+    private static final String SQL_TABLE_DROP = "DROP TABLE IF EXISTS EMPLOYEE";
 
     protected Connection getConnection() {
         Connection connection = null;
@@ -203,23 +218,23 @@ public class UserDAO implements IUserDAO {
             if (resultSet.next())
                 userId = resultSet.getInt(1);
             if (rowAffected == 1) {
-                String sqlPivot = "INSERT INTO user_permission(user_id,permission_id) "  + "VALUES(?,?)";
+                String sqlPivot = "INSERT INTO user_permission(user_id,permission_id) " + "VALUES(?,?)";
                 preparedStatementAssignment = connection.prepareStatement(sqlPivot);
-                for (int permissionId: permission
-                     ) {
+                for (int permissionId : permission
+                ) {
                     preparedStatementAssignment.setInt(1, userId);
                     preparedStatementAssignment.setInt(2, permissionId);
                     preparedStatementAssignment.executeUpdate();
                 }
                 connection.commit();
-            } else  {
+            } else {
                 connection.rollback();
             }
         } catch (SQLException e) {
             try {
                 if (connection != null)
                     connection.rollback();
-            } catch(SQLException ex) {
+            } catch (SQLException ex) {
                 System.out.println(ex.getMessage());
             }
             System.out.println(e.getMessage());
@@ -232,6 +247,34 @@ public class UserDAO implements IUserDAO {
             } catch (SQLException e) {
                 System.out.println(e.getMessage());
             }
+        }
+    }
+
+    @Override
+    public void insertUpdateWithoutTransaction() {
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             PreparedStatement preparedStatementInsert = connection.prepareStatement(SQL_INSERT);
+             PreparedStatement preparedStatementUpdate = connection.prepareStatement(SQL_UPDATE);
+        ) {
+            statement.execute(SQL_TABLE_DROP);
+            statement.execute(SQL_TABLE_CREATE);
+
+            preparedStatementInsert.setString(1, "Quynh");
+            preparedStatementInsert.setBigDecimal(2, new BigDecimal(10));
+            preparedStatementInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            preparedStatementInsert.execute();
+
+            preparedStatementInsert.setString(1, "Ngan");
+            preparedStatementInsert.setBigDecimal(2, new BigDecimal(20));
+            preparedStatementInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            preparedStatementInsert.execute();
+
+            preparedStatementUpdate.setBigDecimal(2, new BigDecimal(999.99));
+            preparedStatementUpdate.setString(2, "Quynh");
+            preparedStatementUpdate.execute();
+        } catch (SQLException e) {
+            printSQLException(e);
         }
     }
 }
